@@ -1,4 +1,3 @@
-
 namespace CongestionTaxCalculator.Domain.Policies;
 
 public class DateTollPolicy(int year)
