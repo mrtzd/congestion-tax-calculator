@@ -30,6 +30,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\CongestionTaxCalculator.Application\CongestionTaxCalculator.Application.csproj" />
+    <ProjectReference Include="..\..\src\CongestionTaxCalculator.Domain\CongestionTaxCalculator.Domain.csproj" />
   </ItemGroup>
 
 </Project>

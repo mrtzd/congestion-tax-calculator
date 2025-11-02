@@ -1,3 +1,8 @@
+using System.Text.Json.Serialization;
+using CongestionTaxCalculator.Application.Interfaces;
+using CongestionTaxCalculator.Application.Services;
+using CongestionTaxCalculator.Domain.Policies;
+using CongestionTaxCalculator.Domain.Services;
 using CongestionTaxCalculator.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
@@ -6,6 +11,15 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection")));
+
+// Policies are stateless, so they can be singletons
+builder.Services.AddSingleton(new DateTollPolicy(2013));
+builder.Services.AddSingleton<TollExemptionPolicy>();
+builder.Services.AddSingleton<TollFeePolicy>();
+
+// Services are scoped to the HTTP request
+builder.Services.AddScoped<CongestionTaxService>();
+builder.Services.AddScoped<ICongestionTaxAppService, CongestionTaxAppService>();
 
 // Add services to the container.
 builder.Services.AddControllers();
