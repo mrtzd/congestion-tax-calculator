@@ -18,9 +18,10 @@ public class TollExemptionPolicyTests
     {
         // Arrange
         var vehicle = new Vehicle(type);
+        var policy = new TollExemptionPolicy();
 
         // Act
-        var isFree = TollExemptionPolicy.IsTollFree(vehicle);
+        var isFree = policy.IsTollFree(vehicle);
 
         // Assert
         Assert.Equal(expectedIsFree, isFree);

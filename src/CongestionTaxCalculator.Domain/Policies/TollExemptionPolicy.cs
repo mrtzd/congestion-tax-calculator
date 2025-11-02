@@ -3,9 +3,9 @@ using CongestionTaxCalculator.Domain.Enums;
 
 namespace CongestionTaxCalculator.Domain.Policies;
 
-public static class TollExemptionPolicy
+public class TollExemptionPolicy
 {
-    public static bool IsTollFree(Vehicle vehicle)
+    public bool IsTollFree(Vehicle vehicle)
     {
         return vehicle.Type switch
         {
