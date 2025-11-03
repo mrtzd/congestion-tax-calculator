@@ -1,5 +1,3 @@
-// src/CongestionTaxCalculator.Domain/Services/CongestionTaxService.cs
-
 using CongestionTaxCalculator.Domain.Entities;
 using CongestionTaxCalculator.Domain.Policies;
 
@@ -8,63 +6,64 @@ namespace CongestionTaxCalculator.Domain.Services;
 public class CongestionTaxService(
     TollExemptionPolicy exemptionPolicy,
     DateTollPolicy datePolicy,
-    TollFeePolicy feePolicy)
+    TollFeePolicy feePolicy) : ICongestionTaxService
 {
-    private const int MaxDailyFee = 60;
-
-    public int CalculateTax(Vehicle vehicle, IReadOnlyList<DateTime> dates)
+    public int CalculateTax(Vehicle vehicle, IReadOnlyList<DateTime> dates, City city)
     {
-        if (exemptionPolicy.IsTollFree(vehicle) || !dates.Any())
+        var exemptVehicleTypes = city.VehicleExemptions.Select(ve => ve.VehicleType).ToHashSet();
+        if (exemptionPolicy.IsTollFree(vehicle, exemptVehicleTypes) || !dates.Any())
         {
             return 0;
         }
 
-        var sortedDates = dates.OrderBy(d => d).ToList();
-        var groupedByDay = sortedDates.GroupBy(d => d.Date);
-
+        var groupedByDay = dates.OrderBy(d => d).GroupBy(d => d.Date);
         int totalTax = 0;
+
+        var tollFreeWeekdays = city.TollFreeWeekdays.Select(w => w.DayOfWeek).ToHashSet();
+        var tollFreeMonths = city.TollFreeMonths.Select(m => m.Month).ToHashSet();
+        var publicHolidays = city.PublicHolidays.Select(h => h.Date).ToHashSet();
+
+        var daysBeforePublicHolidays = new HashSet<DateOnly>();
+        if (city.IsDayBeforePublicHolidayTollFree)
+        {
+            daysBeforePublicHolidays = publicHolidays.Select(h => h.AddDays(-1)).ToHashSet();
+        }
 
         foreach (var dayGroup in groupedByDay)
         {
-            var currentDate = dayGroup.Key;
-
-            // Skip toll-free days
-            if (datePolicy.IsTollFree(currentDate))
+            if (datePolicy.IsTollFree(DateOnly.FromDateTime(dayGroup.Key), tollFreeWeekdays, tollFreeMonths, publicHolidays, daysBeforePublicHolidays))
                 continue;
 
-            var dayPassages = dayGroup.OrderBy(d => d).ToList();
-
-            int dailyFee = 0;
-            DateTime windowStart = dayPassages.First();
-            int windowHighestFee = feePolicy.GetFeeForTime(TimeOnly.FromDateTime(windowStart));
-
-            foreach (var date in dayPassages.Skip(1))
-            {
-                int currentFee = feePolicy.GetFeeForTime(TimeOnly.FromDateTime(date));
-                TimeSpan diff = date - windowStart;
-
-                if (diff.TotalMinutes <= 60)
-                {
-                    // Still within 60-minute window → keep max fee
-                    if (currentFee > windowHighestFee)
-                        windowHighestFee = currentFee;
-                }
-                else
-                {
-                    // Window ended → add highest fee and start new window
-                    dailyFee += windowHighestFee;
-                    windowStart = date;
-                    windowHighestFee = currentFee;
-                }
-            }
-
-            // Add fee for the last window
-            dailyFee += windowHighestFee;
-
-            // Cap daily fee
-            totalTax += Math.Min(dailyFee, MaxDailyFee);
+            totalTax += CalculateFeeForDay(dayGroup.ToList(), city.TollFeeRules, city.MaxDailyFee, city.SingleChargeRuleMinutes);
         }
 
         return totalTax;
+    }
+
+    private int CalculateFeeForDay(List<DateTime> dates, IEnumerable<TollFeeRule> feeRules, int maxDailyFee, int windowMinutes)
+    {
+        int dailyFee = 0;
+        DateTime windowStart = dates[0];
+        int windowHighestFee = feePolicy.GetFeeForTime(TimeOnly.FromDateTime(windowStart), feeRules);
+
+        foreach (var date in dates.Skip(1))
+        {
+            int currentFee = feePolicy.GetFeeForTime(TimeOnly.FromDateTime(date), feeRules);
+            TimeSpan diff = date - windowStart;
+
+            if (diff.TotalMinutes <= windowMinutes)
+            {
+                if (currentFee > windowHighestFee)
+                    windowHighestFee = currentFee;
+            }
+            else
+            {
+                dailyFee += windowHighestFee;
+                windowStart = date;
+                windowHighestFee = currentFee;
+            }
+        }
+        dailyFee += windowHighestFee;
+        return Math.Min(dailyFee, maxDailyFee);
     }
 }

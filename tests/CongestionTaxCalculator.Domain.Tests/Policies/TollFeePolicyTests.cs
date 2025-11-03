@@ -1,4 +1,5 @@
 using CongestionTaxCalculator.Domain.Policies;
+using CongestionTaxCalculator.Domain.Tests.Helpers;
 
 namespace CongestionTaxCalculator.Domain.Tests.Policies;
 
@@ -19,8 +20,9 @@ public class TollFeePolicyTests
     public void GetFeeForTime_ShouldReturnCorrectFee_ForPaidHours(string time, int expectedFee)
     {
         var passageTime = TimeOnly.Parse(time);
+        var city = TestDataFactory.CreateGothenburgTestCity();
 
-        var fee = _policy.GetFeeForTime(passageTime);
+        var fee = _policy.GetFeeForTime(passageTime, city.TollFeeRules);
 
         Assert.Equal(expectedFee, fee);
     }
@@ -32,8 +34,9 @@ public class TollFeePolicyTests
     public void GetFeeForTime_ShouldReturnZero_ForFreeHours(string time)
     {
         var passageTime = TimeOnly.Parse(time);
+        var city = TestDataFactory.CreateGothenburgTestCity();
 
-        var fee = _policy.GetFeeForTime(passageTime);
+        var fee = _policy.GetFeeForTime(passageTime, city.TollFeeRules);
 
         Assert.Equal(0, fee);
     }

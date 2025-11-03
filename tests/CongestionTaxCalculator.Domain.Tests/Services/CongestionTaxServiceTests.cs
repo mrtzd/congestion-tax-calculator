@@ -2,19 +2,21 @@ using CongestionTaxCalculator.Domain.Entities;
 using CongestionTaxCalculator.Domain.Enums;
 using CongestionTaxCalculator.Domain.Policies;
 using CongestionTaxCalculator.Domain.Services;
+using CongestionTaxCalculator.Domain.Tests.Helpers;
 
 namespace CongestionTaxCalculator.Domain.Tests.Services;
 
 public class CongestionTaxServiceTests
 {
-    private readonly CongestionTaxService _service;
+    private readonly ICongestionTaxService _service;
 
     public CongestionTaxServiceTests()
     {
-        var exemptionPolicy = new TollExemptionPolicy();
-        var datePolicy = new DateTollPolicy(2013);
-        var feePolicy = new TollFeePolicy();
-        _service = new CongestionTaxService(exemptionPolicy, datePolicy, feePolicy);
+        _service = new CongestionTaxService(
+            new TollExemptionPolicy(),
+            new DateTollPolicy(),
+            new TollFeePolicy()
+        );
     }
 
     [Fact]
@@ -22,10 +24,11 @@ public class CongestionTaxServiceTests
     {
         // Arrange
         var vehicle = new Vehicle(VehicleType.Motorbike);
+        var city = TestDataFactory.CreateGothenburgTestCity();
         var dates = new[] { DateTime.Parse("2013-02-08 07:00:00") };
 
         // Act
-        var tax = _service.CalculateTax(vehicle, dates);
+        var tax = _service.CalculateTax(vehicle, dates, city);
 
         // Assert
         Assert.Equal(0, tax);
@@ -36,10 +39,11 @@ public class CongestionTaxServiceTests
     {
         // Arrange
         var vehicle = new Vehicle(VehicleType.Car);
+        var city = TestDataFactory.CreateGothenburgTestCity();
         var dates = new[] { DateTime.Parse("2013-04-01 10:00:00") }; // Easter Monday
 
         // Act
-        var tax = _service.CalculateTax(vehicle, dates);
+        var tax = _service.CalculateTax(vehicle, dates, city);
 
         // Assert
         Assert.Equal(0, tax);
@@ -50,6 +54,7 @@ public class CongestionTaxServiceTests
     {
         // Arrange
         var vehicle = new Vehicle(VehicleType.Car);
+        var city = TestDataFactory.CreateGothenburgTestCity();
         // Times: 06:23 (8 SEK), 06:55 (13 SEK) -> Within 60 mins, highest is 13
         var dates = new[]
         {
@@ -58,7 +63,7 @@ public class CongestionTaxServiceTests
         };
 
         // Act
-        var tax = _service.CalculateTax(vehicle, dates);
+        var tax = _service.CalculateTax(vehicle, dates, city);
 
         // Assert
         Assert.Equal(13, tax);
@@ -69,6 +74,7 @@ public class CongestionTaxServiceTests
     {
         // Arrange
         var vehicle = new Vehicle(VehicleType.Car);
+        var city = TestDataFactory.CreateGothenburgTestCity();
         // Times: 06:23 (8 SEK), 15:27 (13 SEK) -> More than 60 mins apart
         var dates = new[]
         {
@@ -77,7 +83,7 @@ public class CongestionTaxServiceTests
         };
 
         // Act
-        var tax = _service.CalculateTax(vehicle, dates);
+        var tax = _service.CalculateTax(vehicle, dates, city);
 
         // Assert
         Assert.Equal(21, tax); // 8 + 13
@@ -88,6 +94,7 @@ public class CongestionTaxServiceTests
     {
         // Arrange
         var vehicle = new Vehicle(VehicleType.Car);
+        var city = TestDataFactory.CreateGothenburgTestCity();
         var dateStrings = new[]
         {
             "2013-02-08 06:20:27", // Window 1: 06:20 (8)
@@ -116,7 +123,7 @@ public class CongestionTaxServiceTests
         // New sum would be 8 + 8 + 18 + 13 + 18 + 13 = 78, which should be capped.
 
         // Act
-        var tax = _service.CalculateTax(vehicle, moreDates);
+        var tax = _service.CalculateTax(vehicle, moreDates, city);
 
         // Assert
         Assert.Equal(60, tax);
@@ -127,6 +134,7 @@ public class CongestionTaxServiceTests
     {
         // Arrange
         var vehicle = new Vehicle(VehicleType.Car);
+        var city = TestDataFactory.CreateGothenburgTestCity();
         var dates = new[]
         {
         // Day 1: taxable day (Feb 7, 2013)
@@ -149,7 +157,7 @@ public class CongestionTaxServiceTests
     };
 
         // Act
-        var tax = _service.CalculateTax(vehicle, dates);
+        var tax = _service.CalculateTax(vehicle, dates, city);
 
         // Assert
         // Day 1 and Day 3 both easily exceed 60 SEK total, so they should each be capped.

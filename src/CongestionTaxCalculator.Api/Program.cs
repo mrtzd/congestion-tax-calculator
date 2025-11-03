@@ -13,12 +13,12 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 // Policies are stateless, so they can be singletons
-builder.Services.AddSingleton(new DateTollPolicy(2013));
+builder.Services.AddSingleton<DateTollPolicy>();
 builder.Services.AddSingleton<TollExemptionPolicy>();
 builder.Services.AddSingleton<TollFeePolicy>();
 
 // Services are scoped to the HTTP request
-builder.Services.AddScoped<CongestionTaxService>();
+builder.Services.AddScoped<ICongestionTaxService, CongestionTaxService>();
 builder.Services.AddScoped<ICongestionTaxAppService, CongestionTaxAppService>();
 
 // Add services to the container.

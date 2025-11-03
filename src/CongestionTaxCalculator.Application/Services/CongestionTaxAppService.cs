@@ -6,7 +6,7 @@ using CongestionTaxCalculator.Domain.Services;
 
 namespace CongestionTaxCalculator.Application.Services;
 
-public class CongestionTaxAppService(CongestionTaxService domainService) : ICongestionTaxAppService
+public class CongestionTaxAppService(ICongestionTaxService domainService) : ICongestionTaxAppService
 {
     public Task<int> CalculateTaxAsync(TaxCalculationRequest request)
     {

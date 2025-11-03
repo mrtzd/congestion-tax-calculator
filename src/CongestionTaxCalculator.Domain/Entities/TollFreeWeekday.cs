@@ -1,0 +1,9 @@
+namespace CongestionTaxCalculator.Domain.Entities;
+
+public class TollFreeWeekday
+{
+    public int Id { get; set; }
+    public DayOfWeek DayOfWeek { get; set; }
+    public int CityId { get; set; }
+    public City City { get; set; } = null!;
+}

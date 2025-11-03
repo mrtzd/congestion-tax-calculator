@@ -1,6 +1,7 @@
 using CongestionTaxCalculator.Domain.Entities;
 using CongestionTaxCalculator.Domain.Enums;
 using CongestionTaxCalculator.Domain.Policies;
+using CongestionTaxCalculator.Domain.Tests.Helpers;
 
 namespace CongestionTaxCalculator.Domain.Tests.Policies;
 
@@ -18,10 +19,11 @@ public class TollExemptionPolicyTests
     {
         // Arrange
         var vehicle = new Vehicle(type);
+        var city = TestDataFactory.CreateGothenburgTestCity();
         var policy = new TollExemptionPolicy();
 
         // Act
-        var isFree = policy.IsTollFree(vehicle);
+        var isFree = policy.IsTollFree(vehicle, city.VehicleExemptions.Select(ve => ve.VehicleType));
 
         // Assert
         Assert.Equal(expectedIsFree, isFree);
