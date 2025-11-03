@@ -1,4 +1,4 @@
-# Congestion Tax Calculator API
+# Congestion Tax Calculator
 
 This project is a robust, scalable, and well-tested RESTful API for calculating congestion tax fees. It is built using .NET 8, following the principles of Clean Architecture, Domain-Driven Design (DDD), and Test-Driven Development (TDD).
 
