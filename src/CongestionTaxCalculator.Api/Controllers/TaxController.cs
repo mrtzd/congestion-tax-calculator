@@ -9,12 +9,12 @@ namespace CongestionTaxCalculator.Api.Controllers;
 public class TaxController(ICongestionTaxAppService appService) : ControllerBase
 {
     [HttpPost("calculate")]
-    public async Task<IActionResult> CalculateTax([FromBody] TaxCalculationRequest request)
+    public async Task<ActionResult<TaxCalculationResponse>> CalculateTax([FromBody] TaxCalculationRequest request)
     {
         try
         {
             var taxAmount = await appService.CalculateTaxAsync(request);
-            return Ok(new { TaxAmount = taxAmount });
+            return Ok(new TaxCalculationResponse { TaxAmount = taxAmount });
         }
         catch (ArgumentException ex)
         {
