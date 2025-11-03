@@ -1,55 +1,67 @@
 using CongestionTaxCalculator.Application.DTOs;
+using CongestionTaxCalculator.Application.Interfaces;
 using CongestionTaxCalculator.Application.Services;
-using CongestionTaxCalculator.Domain.Policies;
+using CongestionTaxCalculator.Domain.Entities;
 using CongestionTaxCalculator.Domain.Services;
+using Moq;
 
 namespace CongestionTaxCalculator.Application.Tests.Services;
 
 public class CongestionTaxAppServiceTests
 {
+    private readonly Mock<ICityRepository> _mockCityRepository;
+    private readonly Mock<ICongestionTaxService> _mockDomainService;
     private readonly CongestionTaxAppService _appService;
 
     public CongestionTaxAppServiceTests()
     {
-        var domainService = new CongestionTaxService(
-            new TollExemptionPolicy(),
-            new DateTollPolicy(2013),
-            new TollFeePolicy()
-        );
-        _appService = new CongestionTaxAppService(domainService);
+        _mockCityRepository = new Mock<ICityRepository>();
+        _mockDomainService = new Mock<ICongestionTaxService>();
+        _appService = new CongestionTaxAppService(_mockCityRepository.Object, _mockDomainService.Object);
     }
 
     [Fact]
-    public async Task CalculateTaxAsync_WithValidCarRequest_ShouldReturnCorrectTax()
+    public async Task CalculateTaxAsync_WithValidRequest_ShouldCallDomainServiceAndReturnResult()
     {
         // Arrange
         var request = new TaxCalculationRequest
         {
+            CityName = "Gothenburg",
             VehicleType = "Car",
-            Passages =
-            [
-                DateTime.Parse("2013-02-07 06:23:27"), // 8 SEK
-                DateTime.Parse("2013-02-07 15:27:00")  // 13 SEK
-            ]
+            Passages = new List<DateTime> { DateTime.Now }
         };
-        // Expected result: 8 + 13 = 21
+        var testCity = new City { Name = "Gothenburg" };
+        var expectedTax = 42;
+
+        _mockCityRepository
+            .Setup(repo => repo.GetCityByNameAsync(request.CityName))
+            .ReturnsAsync(testCity);
+
+        _mockDomainService
+            .Setup(ds => ds.CalculateTax(It.IsAny<Vehicle>(), request.Passages, testCity))
+            .Returns(expectedTax);
 
         // Act
         var result = await _appService.CalculateTaxAsync(request);
 
         // Assert
-        Assert.Equal(21, result);
+        Assert.Equal(expectedTax, result);
+        _mockCityRepository.Verify(repo => repo.GetCityByNameAsync("Gothenburg"), Times.Once); // Verify repo was called
     }
 
     [Fact]
-    public async Task CalculateTaxAsync_WithInvalidVehicleType_ShouldThrowArgumentException()
+    public async Task CalculateTaxAsync_WhenCityNotFound_ShouldThrowArgumentException()
     {
         // Arrange
         var request = new TaxCalculationRequest
         {
-            VehicleType = "Skateboard",
-            Passages = [DateTime.Now]
+            CityName = "NonExistentCity",
+            VehicleType = "Car",
+            Passages = []
         };
+        _mockCityRepository
+            .Setup(repo => repo.GetCityByNameAsync(request.CityName))
+            .ReturnsAsync((City?)null); // Simulate city not found
 
         // Act & Assert
         await Assert.ThrowsAsync<ArgumentException>(() => _appService.CalculateTaxAsync(request));

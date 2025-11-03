@@ -1,9 +1,9 @@
-using System.Text.Json.Serialization;
 using CongestionTaxCalculator.Application.Interfaces;
 using CongestionTaxCalculator.Application.Services;
 using CongestionTaxCalculator.Domain.Policies;
 using CongestionTaxCalculator.Domain.Services;
 using CongestionTaxCalculator.Infrastructure.Persistence;
+using CongestionTaxCalculator.Infrastructure.Repositories;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
 
@@ -19,6 +19,7 @@ builder.Services.AddSingleton<TollFeePolicy>();
 
 // Services are scoped to the HTTP request
 builder.Services.AddScoped<ICongestionTaxService, CongestionTaxService>();
+builder.Services.AddScoped<ICityRepository, CityRepository>();
 builder.Services.AddScoped<ICongestionTaxAppService, CongestionTaxAppService>();
 
 // Add services to the container.
@@ -36,6 +37,12 @@ builder.Services.AddSwaggerGen(options =>
 });
 
 var app = builder.Build();
+
+using (var scope = app.Services.CreateScope())
+{
+    var services = scope.ServiceProvider;
+    DbInitializer.Initialize(services);
+}
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())

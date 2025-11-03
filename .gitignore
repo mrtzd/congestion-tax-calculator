@@ -482,3 +482,6 @@ $RECYCLE.BIN/
 
 # Vim temporary swap files
 *.swp
+
+# Data folder in API project
+src/CongestionTaxCalculator.Api/Data
